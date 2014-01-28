@@ -482,37 +482,30 @@ public class ApiWrapper implements CloudAPI, Serializable {
     }
 
     @Override
-    public Stream resolveStreamUrl(final String url, boolean skipLogging) throws IOException {
+    public Stream resolveStreamUrl(final String url) throws IOException {
         HttpResponse resp = safeExecute(null, addHeaders(Request.to(url).buildRequest(HttpHead.class)));
-        if (resp.getStatusLine().getStatusCode() == HttpStatus.SC_MOVED_TEMPORARILY) {
+        if (resp.getStatusLine().getStatusCode() == HttpStatus.SC_OK){
+            return new Stream(url, url, resp);
+        }
+
+        String actualStreamUrl = null;
+        while (resp.getStatusLine().getStatusCode() == HttpStatus.SC_MOVED_TEMPORARILY){
             Header location = resp.getFirstHeader("Location");
             if (location != null && location.getValue() != null) {
-                final String headRedirect = location.getValue();
-                resp = safeExecute(null, new HttpHead(headRedirect));
-                if (resp.getStatusLine().getStatusCode() == HttpStatus.SC_OK) {
-                    Stream stream = new Stream(url, headRedirect, resp);
-                    // need to do another GET request to have a URL ready for client usage
-                    Request req = Request.to(url);
-                    if (skipLogging) {
-                        // skip logging
-                        req.with("skip_logging", "1");
-                    }
-                    resp = safeExecute(null, addHeaders(Request.to(url).buildRequest(HttpGet.class)));
-                    if (resp.getStatusLine().getStatusCode() == HttpStatus.SC_MOVED_TEMPORARILY) {
-                        return stream.withNewStreamUrl(resp.getFirstHeader("Location").getValue());
-                    } else {
-                        throw new ResolverException("Unexpected response code", resp);
-                    }
-                } else {
-                    throw new ResolverException("Unexpected response code", resp);
-                }
+                actualStreamUrl = location.getValue();
+                resp = safeExecute(null, new HttpHead(actualStreamUrl));
             } else {
-                throw new ResolverException("Location header not set", resp);
+                throw new ResolverException("No location header", resp);
             }
+        }
+
+        if (resp.getStatusLine().getStatusCode() == HttpStatus.SC_OK) {
+            return new Stream(url, actualStreamUrl, resp);
         } else {
-            throw new ResolverException("Unexpected response code", resp);
+            throw new ResolverException("Invalid status code", resp);
         }
     }
+
 
     @Override
     public HttpResponse head(Request request) throws IOException {

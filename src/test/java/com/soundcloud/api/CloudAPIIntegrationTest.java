@@ -250,7 +250,7 @@ public class CloudAPIIntegrationTest implements Params.Track, Endpoints {
         login();
 
         String streamUrl = getApiUrlFromPermalink(TRACK_PERMALINK) + "/stream";
-        Stream resolved = api.resolveStreamUrl(streamUrl, false);
+        Stream resolved = api.resolveStreamUrl(streamUrl);
 
         assertThat(resolved.url, equalTo(streamUrl));
         assertThat(resolved.streamUrl, containsString("https://ec-media.soundcloud.com/"));
@@ -271,7 +271,7 @@ public class CloudAPIIntegrationTest implements Params.Track, Endpoints {
     }
 
     private void testResolveNonApiStreamUrls() throws IOException {
-        Stream resolved = api.resolveStreamUrl(MEDIA_LINK, false);
+        Stream resolved = api.resolveStreamUrl(MEDIA_LINK);
 
         assertThat(resolved.url, equalTo(MEDIA_LINK));
         assertThat(resolved.streamUrl, containsString("http://ec-media.soundcloud.com/"));
@@ -284,7 +284,7 @@ public class CloudAPIIntegrationTest implements Params.Track, Endpoints {
     public void shouldThrowResolverExceptionWhenStreamCannotBeResolved() throws Exception {
         login();
         try {
-            Stream s = api.resolveStreamUrl("https://api.soundcloud.com/tracks/999919191/stream", false);
+            Stream s = api.resolveStreamUrl("https://api.soundcloud.com/tracks/999919191/stream");
             fail("expected resolver exception, got: "+s);
         } catch (CloudAPI.ResolverException e) {
             // expected
@@ -298,7 +298,7 @@ public class CloudAPIIntegrationTest implements Params.Track, Endpoints {
 
         String streamUrl = getApiUrlFromPermalink(TRACK_PERMALINK)+"/stream";
 
-        Stream resolved = api.resolveStreamUrl(streamUrl, false);
+        Stream resolved = api.resolveStreamUrl(streamUrl);
         assertThat(resolved.contentLength, is(TRACK_LENGTH));
 
         HttpResponse resp = api

@@ -39,6 +39,7 @@ import org.apache.http.client.methods.HttpUriRequest;
 import org.apache.http.conn.ClientConnectionManager;
 import org.apache.http.conn.ConnectionKeepAliveStrategy;
 import org.apache.http.conn.routing.HttpRoutePlanner;
+import org.apache.http.message.BasicHeader;
 import org.apache.http.params.HttpParams;
 import org.apache.http.protocol.HttpContext;
 import org.apache.http.protocol.HttpProcessor;
@@ -527,6 +528,147 @@ public class ApiWrapperTest {
             // make sure client retried request
             verify(client, times(2)).execute(any(HttpHost.class), any(HttpUriRequest.class));
         }
+    }
+
+    @Test(expected = CloudAPI.ResolverException.class)
+    public void resolveStreamUrlShouldThrowExceptionWithNoOkCode() throws Exception {
+        HttpResponse r = mock(HttpResponse.class);
+        StatusLine line = mock(StatusLine.class);
+        when(line.getStatusCode()).thenReturn(400);
+        when(r.getStatusLine()).thenReturn(line);
+
+        layer.addHttpResponseRule(new RequestMatcher() {
+            @Override
+            public boolean matches(HttpRequest request) {
+                return true;
+            }
+        }, r);
+
+        api.resolveStreamUrl("asdf");
+    }
+
+    @Test(expected = CloudAPI.ResolverException.class)
+    public void resolveStreamUrlShouldThrowExceptionWithNoRedirectLocation() throws Exception {
+        // setup redirects
+        HttpResponse r = mock(HttpResponse.class);
+
+        StatusLine lineRedirect = mock(StatusLine.class);
+        when(lineRedirect.getStatusCode()).thenReturn(302);
+        when(r.getStatusLine()).thenReturn(lineRedirect);
+
+        layer.addHttpResponseRule(new RequestMatcher() {
+            @Override
+            public boolean matches(HttpRequest request) {
+                return true;
+            }
+        }, r);
+
+        api.resolveStreamUrl("asdf");
+    }
+
+    @Test
+    public void shouldResolveStreamUrlWithNoRedirect() throws Exception {
+        final String streamUrl = "http://api.soundcloud.com/tracks/1000/stream/";
+
+        HttpResponse r = createStreamResponse(streamUrl);
+
+        layer.addHttpResponseRule(new RequestMatcher() {
+            @Override
+            public boolean matches(HttpRequest request) {
+                return request.getRequestLine().getUri().equals(streamUrl);
+            }
+        }, r);
+
+        assertThat(api.resolveStreamUrl(streamUrl).streamUrl, equalTo(streamUrl));
+    }
+
+    @Test
+    public void shouldResolveStreamUrlWithSingleRedirect() throws Exception {
+        final String streamUrl = "http://api.soundcloud.com/tracks/1000/stream/";
+        final String contentUrl = "http://content-url";
+
+        HttpResponse r = createRedirect(contentUrl);
+        HttpResponse r2 = createStreamResponse(contentUrl);
+
+        layer.addHttpResponseRule(new RequestMatcher() {
+            @Override
+            public boolean matches(HttpRequest request) {
+                return request.getRequestLine().getUri().equals(streamUrl);
+            }
+        }, r);
+        layer.addHttpResponseRule(new RequestMatcher() {
+            @Override
+            public boolean matches(HttpRequest request) {
+                return request.getRequestLine().getUri().equals(contentUrl);
+            }
+        }, r2);
+
+        assertThat(api.resolveStreamUrl(streamUrl).streamUrl, equalTo(contentUrl));
+    }
+
+    @Test
+    public void shouldResolveStreamUrlWithMultipleRedirects() throws Exception {
+        final String streamUrl = "http://api.soundcloud.com/tracks/1000/stream/";
+        final String redirectUrl = "http://redirect-url";
+        final String contentUrl = "http://content-url";
+
+        HttpResponse r = createRedirect(redirectUrl);
+        HttpResponse r2 = createRedirect(contentUrl);
+        HttpResponse r3 = createStreamResponse(contentUrl);
+
+        layer.addHttpResponseRule(new RequestMatcher() {
+            @Override
+            public boolean matches(HttpRequest request) {
+                return request.getRequestLine().getUri().equals(streamUrl);
+            }
+        }, r);
+        layer.addHttpResponseRule(new RequestMatcher() {
+            @Override
+            public boolean matches(HttpRequest request) {
+                return request.getRequestLine().getUri().equals(redirectUrl);
+            }
+        }, r2);
+        layer.addHttpResponseRule(new RequestMatcher() {
+            @Override
+            public boolean matches(HttpRequest request) {
+                return request.getRequestLine().getUri().equals(contentUrl);
+            }
+        }, r3);
+
+
+        assertThat(api.resolveStreamUrl(streamUrl).streamUrl, equalTo(contentUrl));
+    }
+
+    private HttpResponse createRedirect(String redirectUrl) {
+        // setup redirects
+        HttpResponse r = mock(HttpResponse.class);
+
+        StatusLine lineRedirect = mock(StatusLine.class);
+        when(lineRedirect.getStatusCode()).thenReturn(302);
+        when(r.getStatusLine()).thenReturn(lineRedirect);
+
+        Header locationRedirect = mock(Header.class);
+        when(locationRedirect.getValue()).thenReturn(redirectUrl);
+        when(r.getFirstHeader(anyString())).thenReturn(locationRedirect);
+        return r;
+    }
+
+    private HttpResponse createStreamResponse(String location) {
+        HttpResponse r3 = mock(HttpResponse.class);
+
+        StatusLine lineOk = mock(StatusLine.class);
+        when(lineOk.getStatusCode()).thenReturn(200);
+        when(r3.getStatusLine()).thenReturn(lineOk);
+
+        Header locationContent = mock(Header.class);
+        when(locationContent.getValue()).thenReturn(location);
+        when(r3.getFirstHeader("Location")).thenReturn(locationContent);
+        when(r3.getFirstHeader("ETag")).thenReturn(new BasicHeader("ETag", "j2387djfe7839"));
+        when(r3.getFirstHeader("Content-Length")).thenReturn(new BasicHeader("Content-Length", "12345"));
+        when(r3.getFirstHeader("Last-Modified")).thenReturn(new BasicHeader("Last-Modified", "Sat, 01 Jul 2006 01:50:55 UTC"));
+        when(r3.getFirstHeader(Stream.AMZ_DURATION)).thenReturn(new BasicHeader(Stream.AMZ_DURATION, "1"));
+        when(r3.getFirstHeader(Stream.AMZ_BITRATE)).thenReturn(new BasicHeader(Stream.AMZ_BITRATE, "2"));
+        return r3;
     }
 
     @Test
