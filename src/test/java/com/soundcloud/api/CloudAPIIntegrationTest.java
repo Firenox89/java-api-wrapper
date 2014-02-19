@@ -46,7 +46,7 @@ public class CloudAPIIntegrationTest implements Params.Track, Endpoints {
     static final String CLIENT_SECRET = "ff3685dbf02ce789a16631b0028e0512";
 
     public static final String TRACK_PERMALINK = "http://soundcloud.com/jberkel/nobody-home";
-    public static final String MEDIA_LINK = "http://media.soundcloud.com/stream/zkwlN5MGNsJt";
+    public static final String MEDIA_LINK = "http://media.soundcloud.com/stream/Ulcs8CKpcmMt";
     public static final long USER_ID      = 18173653L;
     public static final long CHE_FLUTE_TRACK_ID = 274334;
     public static final long FLICKERMOOD_TRACK_ID = 293;
@@ -277,7 +277,7 @@ public class CloudAPIIntegrationTest implements Params.Track, Endpoints {
         assertThat(resolved.streamUrl, containsString("http://ec-media.soundcloud.com/"));
 
         assertTrue("expire should be in the future", resolved.expires > System.currentTimeMillis());
-        assertThat(resolved.eTag, equalTo("\"5eeb63b73f99ff2de44a60441d421d2a\""));
+        assertThat(resolved.eTag, equalTo("\"9b7117fa477713edf4ae96f142913d2c\""));
     }
 
     @Test
