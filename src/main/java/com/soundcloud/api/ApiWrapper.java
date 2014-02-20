@@ -90,7 +90,7 @@ public class ApiWrapper implements CloudAPI, Serializable {
 
     private static final long serialVersionUID = 3662083416905771921L;
     private static final Token EMPTY_TOKEN = new Token(null, null);
-    static final int MAX_REDIRECTS = 10;
+    static final int MAX_REDIRECTS = 5;
 
     /** The current environment, only live possible for now */
     public final Env env = Env.LIVE;
