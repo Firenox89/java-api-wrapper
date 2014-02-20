@@ -639,6 +639,20 @@ public class ApiWrapperTest {
         assertThat(api.resolveStreamUrl(streamUrl).streamUrl, equalTo(contentUrl));
     }
 
+    @Test(expected = CloudAPI.ResolverException.class)
+    public void doesntFollowInfiniteRedirects() throws Exception {
+        final String streamUrl = "http://api.soundcloud.com/tracks/1000/stream/";
+
+        HttpResponse r = createRedirect(streamUrl);
+        layer.addHttpResponseRule(new RequestMatcher() {
+            @Override
+            public boolean matches(HttpRequest request) {
+                return true;
+            }
+        }, r);
+        api.resolveStreamUrl(streamUrl);
+    }
+
     private HttpResponse createRedirect(String redirectUrl) {
         // setup redirects
         HttpResponse r = mock(HttpResponse.class);

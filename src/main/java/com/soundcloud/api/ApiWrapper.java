@@ -90,6 +90,7 @@ public class ApiWrapper implements CloudAPI, Serializable {
 
     private static final long serialVersionUID = 3662083416905771921L;
     private static final Token EMPTY_TOKEN = new Token(null, null);
+    static final int MAX_REDIRECTS = 10;
 
     /** The current environment, only live possible for now */
     public final Env env = Env.LIVE;
@@ -489,7 +490,8 @@ public class ApiWrapper implements CloudAPI, Serializable {
         }
 
         String actualStreamUrl = null;
-        while (resp.getStatusLine().getStatusCode() == HttpStatus.SC_MOVED_TEMPORARILY){
+        int follows = 0;
+        while (resp.getStatusLine().getStatusCode() == HttpStatus.SC_MOVED_TEMPORARILY && ++follows < MAX_REDIRECTS){
             Header location = resp.getFirstHeader("Location");
             if (location != null && location.getValue() != null) {
                 actualStreamUrl = location.getValue();
@@ -502,7 +504,7 @@ public class ApiWrapper implements CloudAPI, Serializable {
         if (resp.getStatusLine().getStatusCode() == HttpStatus.SC_OK) {
             return new Stream(url, actualStreamUrl, resp);
         } else {
-            throw new ResolverException("Invalid status code", resp);
+            throw new ResolverException(follows == MAX_REDIRECTS ? "Terminated redirect loop" : "Invalid status code", resp);
         }
     }
 
