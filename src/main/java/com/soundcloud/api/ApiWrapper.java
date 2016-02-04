@@ -136,7 +136,7 @@ public class ApiWrapper implements CloudAPI, Serializable {
         mToken = token == null ? EMPTY_TOKEN : token;
     }
 
-    @Override public Token login(String username, String password, String... scopes) throws IOException {
+    public Token login(String username, String password, String... scopes) throws IOException {
         if (username == null || password == null) {
             throw new IllegalArgumentException("username or password is null");
         }
@@ -152,7 +152,7 @@ public class ApiWrapper implements CloudAPI, Serializable {
 
 
 
-    @Override public Token authorizationCode(String code, String... scopes) throws IOException {
+    public Token authorizationCode(String code, String... scopes) throws IOException {
         if (code == null) {
             throw new IllegalArgumentException("code is null");
         }
@@ -167,7 +167,7 @@ public class ApiWrapper implements CloudAPI, Serializable {
     }
 
 
-    @Override public Token clientCredentials(String... scopes) throws IOException {
+    public Token clientCredentials(String... scopes) throws IOException {
         final Request req = addScope(Request.to(Endpoints.TOKEN).with(
                 GRANT_TYPE, CLIENT_CREDENTIALS,
                 CLIENT_ID,  mClientId,
@@ -185,7 +185,6 @@ public class ApiWrapper implements CloudAPI, Serializable {
         return token;
     }
 
-    @Override
     public Token extensionGrantType(String grantType, String... scopes) throws IOException {
         final Request req = addScope(Request.to(Endpoints.TOKEN).with(
                 GRANT_TYPE, grantType,
@@ -196,7 +195,7 @@ public class ApiWrapper implements CloudAPI, Serializable {
         return mToken;
     }
 
-    @Override public Token refreshToken() throws IOException {
+    public Token refreshToken() throws IOException {
         if (mToken == null || mToken.refresh == null) throw new IllegalStateException("no refresh token available");
         mToken = requestToken(Request.to(Endpoints.TOKEN).with(
                 GRANT_TYPE, REFRESH_TOKEN,
@@ -206,7 +205,7 @@ public class ApiWrapper implements CloudAPI, Serializable {
         return mToken;
     }
 
-    @Override public Token invalidateToken() {
+    public Token invalidateToken() {
         if (mToken != null) {
             Token alternative = listener == null ? null : listener.onTokenInvalid(mToken);
             mToken.invalidate();
@@ -221,7 +220,7 @@ public class ApiWrapper implements CloudAPI, Serializable {
         }
     }
 
-    @Override public URI authorizationCodeUrl(String... options) {
+    public URI authorizationCodeUrl(String... options) {
         final Request req = Request.to(options.length == 0 ? Endpoints.CONNECT : options[0]).with(
                 REDIRECT_URI, mRedirectUri,
                 CLIENT_ID, mClientId,
@@ -303,7 +302,6 @@ public class ApiWrapper implements CloudAPI, Serializable {
         // fix contributed by Bjorn Roche XXX check if still needed
         params.setBooleanParameter("http.protocol.expect-continue", false);
         params.setParameter(ConnManagerPNames.MAX_CONNECTIONS_PER_ROUTE, new ConnPerRoute() {
-            @Override
             public int getMaxForRoute(HttpRoute httpRoute) {
                 if (env.isApiHost(httpRoute.getTargetHost())) {
                     // there will be a lot of concurrent request to the API host
@@ -390,7 +388,6 @@ public class ApiWrapper implements CloudAPI, Serializable {
                     params) {
                 {
                     setKeepAliveStrategy(new ConnectionKeepAliveStrategy() {
-                        @Override
                         public long getKeepAliveDuration(HttpResponse httpResponse, HttpContext httpContext) {
                             return KEEPALIVE_TIMEOUT;
                         }
@@ -403,7 +400,6 @@ public class ApiWrapper implements CloudAPI, Serializable {
                     getAuthSchemes().register(CloudAPI.OAUTH_SCHEME, new OAuth2Scheme.Factory(ApiWrapper.this));
 
                     addResponseInterceptor(new HttpResponseInterceptor() {
-                        @Override
                         public void process(HttpResponse response, HttpContext context)
                                 throws HttpException, IOException {
                             if (response == null || response.getEntity() == null) return;
@@ -456,7 +452,6 @@ public class ApiWrapper implements CloudAPI, Serializable {
         return httpClient;
     }
 
-    @Override
     public long resolve(String url) throws IOException {
         HttpResponse resp = get(Request.to(Endpoints.RESOLVE).with("url", url));
         if (resp.getStatusLine().getStatusCode() == HttpStatus.SC_MOVED_TEMPORARILY) {
@@ -481,7 +476,6 @@ public class ApiWrapper implements CloudAPI, Serializable {
         }
     }
 
-    @Override
     public Stream resolveStreamUrl(final String url, boolean skipLogging) throws IOException {
         HttpResponse resp = safeExecute(null, addHeaders(Request.to(url).buildRequest(HttpHead.class)));
         if (resp.getStatusLine().getStatusCode() == HttpStatus.SC_MOVED_TEMPORARILY) {
@@ -514,36 +508,34 @@ public class ApiWrapper implements CloudAPI, Serializable {
         }
     }
 
-    @Override
     public HttpResponse head(Request request) throws IOException {
         return execute(request, HttpHead.class);
     }
 
-    @Override public HttpResponse get(Request request) throws IOException {
+    public HttpResponse get(Request request) throws IOException {
         return execute(request, HttpGet.class);
     }
 
-    @Override public HttpResponse put(Request request) throws IOException {
+    public HttpResponse put(Request request) throws IOException {
         return execute(request, HttpPut.class);
     }
 
-    @Override public HttpResponse post(Request request) throws IOException {
+    public HttpResponse post(Request request) throws IOException {
         return execute(request, HttpPost.class);
     }
 
-    @Override public HttpResponse delete(Request request) throws IOException {
+    public HttpResponse delete(Request request) throws IOException {
         return execute(request, HttpDelete.class);
     }
 
-    @Override public Token getToken() {
+    public Token getToken() {
         return mToken;
     }
 
-    @Override public void setToken(Token newToken) {
+    public void setToken(Token newToken) {
         mToken = newToken == null ? EMPTY_TOKEN : newToken;
     }
 
-    @Override
     public synchronized void setTokenListener(TokenListener listener) {
         this.listener = listener;
     }

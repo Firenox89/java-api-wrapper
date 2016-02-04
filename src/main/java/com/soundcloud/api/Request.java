@@ -475,7 +475,7 @@ public class Request implements Iterable<NameValuePair> {
         }
     }
 
-    @Override public Iterator<NameValuePair> iterator() {
+    public Iterator<NameValuePair> iterator() {
         return mParams.iterator();
     }
 
@@ -518,7 +518,6 @@ public class Request implements Iterable<NameValuePair> {
             mBuffer = buffer;
         }
 
-        @Override
         public String getFilename() {
             return null;
         }
@@ -531,7 +530,6 @@ public class Request implements Iterable<NameValuePair> {
             return null;
         }
 
-        @Override
         public long getContentLength() {
             return mBuffer.capacity();
         }
